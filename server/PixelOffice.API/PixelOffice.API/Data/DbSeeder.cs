@@ -27,9 +27,15 @@ public sealed class DbSeeder(AppDbContext db, TimeProvider timeProvider, ILogger
     }
 
     /// <summary>Seeds from the given office map JSON (lets tests simulate a changed file).</summary>
+    /// <exception cref="InvalidMapException">
+    /// The map cannot be used for a room. Nothing is stored, and startup stops with the parser's message.
+    /// </exception>
     public async Task SeedAsync(string officeMapJson, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(officeMapJson);
+
+        // Refuse a broken map file before it reaches the database, so the problem shows at startup.
+        TiledMapParser.Parse(officeMapJson);
 
         var now = timeProvider.GetUtcNow();
         var contentHash = Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(officeMapJson)));
