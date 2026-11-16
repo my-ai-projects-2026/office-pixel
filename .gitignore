@@ -1,0 +1,21 @@
+# .NET build output and IDE state
+bin/
+obj/
+.vs/
+.idea/
+*.user
+*.suo
+TestResults/
+
+# Node / Next.js (app/ also has its own .gitignore)
+node_modules/
+.next/
+out/
+
+# Local secrets and environment
+.env*
+*.pem
+
+# OS
+.DS_Store
+Thumbs.db

@@ -1,0 +1,22 @@
+<Project Sdk="Aspire.AppHost.Sdk/13.6.5">
+
+  <!-- TargetFramework, Nullable, ImplicitUsings and TreatWarningsAsErrors come from ../Directory.Build.props. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <UserSecretsId>585bea18-dfcc-4268-a934-a8fad97a53fc</UserSecretsId>
+    <!-- Orchestrator and dashboard come from NuGet packages, so `dotnet run` needs no Aspire CLI install.
+         Revisit before the Aspire release that makes the CLI bundle mandatory (ASPIRE010). -->
+    <AspireUseCliBundle>false</AspireUseCliBundle>
+    <NoWarn>$(NoWarn);ASPIRE010</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Aspire.Hosting.JavaScript" Version="13.6.5" />
+    <PackageReference Include="Aspire.Hosting.PostgreSQL" Version="13.6.5" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\PixelOffice.API\PixelOffice.API.csproj" />
+  </ItemGroup>
+
+</Project>

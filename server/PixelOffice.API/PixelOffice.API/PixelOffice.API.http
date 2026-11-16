@@ -1,0 +1,6 @@
+@PixelOffice.API_HostAddress = http://localhost:5063
+
+GET {{PixelOffice.API_HostAddress}}/openapi/v1.json
+Accept: application/json
+
+###
