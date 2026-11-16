@@ -12,9 +12,18 @@ namespace PixelOffice.API.Tests.Fixtures;
 /// (migrate and seed) switched on and the database health check left in place.
 /// Pass a <see cref="TimeProvider"/> (usually a FakeTimeProvider) to control the API's clock.
 /// </summary>
-public sealed class DatabaseApiFactory(string connectionString, TimeProvider? timeProvider = null)
-    : WebApplicationFactory<Program>
+public sealed class DatabaseApiFactory : WebApplicationFactory<Program>
 {
+    private readonly string connectionString;
+    private readonly TimeProvider? timeProvider;
+
+    public DatabaseApiFactory(string connectionString, TimeProvider? timeProvider = null)
+    {
+        this.connectionString = connectionString;
+        this.timeProvider = timeProvider;
+        ApiFactory.UseHttps(ClientOptions);
+    }
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseSetting("ConnectionStrings:pixeloffice", connectionString);

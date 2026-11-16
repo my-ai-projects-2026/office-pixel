@@ -1,5 +1,6 @@
 using PixelOffice.API.Data;
 using PixelOffice.API.Features.Auth;
+using PixelOffice.API.Features.Players;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -42,6 +43,7 @@ app.UseAuthorization();
 
 app.MapDefaultEndpoints();
 app.MapAuthEndpoints();
+app.MapPlayerEndpoints();
 
 await app.MigrateAndSeedAsync();
 

@@ -174,10 +174,22 @@ public sealed class AuthTests(PostgresFixture postgres)
 
         clock.Advance(TimeSpan.FromHours(12) - TimeSpan.FromMinutes(1));
         Assert.True((await ValidateAsync(factory, token)).IsValid);
+        Assert.Equal(HttpStatusCode.OK, await GetMeStatusAsync(client, token));
 
         clock.Advance(TimeSpan.FromMinutes(2));
         var expired = await ValidateAsync(factory, token);
         Assert.False(expired.IsValid);
+
+        // Through the real request pipeline: a signed-in-only endpoint refuses the old token (T09 added /api/me).
+        Assert.Equal(HttpStatusCode.Unauthorized, await GetMeStatusAsync(client, token));
+    }
+
+    private static async Task<HttpStatusCode> GetMeStatusAsync(HttpClient client, string token)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/api/me");
+        request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+        using var response = await client.SendAsync(request);
+        return response.StatusCode;
     }
 
     private DatabaseApiFactory NewApi() => new(postgres.NewDatabaseConnectionString(), clock);
