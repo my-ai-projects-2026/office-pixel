@@ -44,8 +44,9 @@ Tags: `[BE]` backend (Dyg), `[UI]` frontend (teammate), `[TEST]`, `[INFRA]`; `[P
 - [x] **T09** [BE] `GET /api/me`, `GET /api/avatars`, `PUT /api/me/avatar` (persistence only) — covers BR-17 — depends on T08
       Done when: tests show a valid avatar is saved and returned by `/api/me`; an id outside the set returns 400 and the look is unchanged.
       Note (2026-11-16): `Features/Players/PlayerEndpoints.cs` — `GET /api/avatars` (anonymous, the 6 presets), `GET /api/me` (200 profile; 401 without a token or when the account no longer exists), `PUT /api/me/avatar` (204; 400 `avatarId` outside the set, look kept; saved with `ExecuteUpdateAsync`). `Features/Auth/PlayerIdentity.TryGetPlayerId` reads the player id from `sub` only (reused by the hub in T15). AC-30 test now also checks `/api/me` returns 401 for a 12-hour-old token through the real pipeline. Test clients now start on `https://localhost`: over HTTP, `UseHttpsRedirection` redirected and HttpClient dropped the `Authorization` header (test-host issue only). Tests: `Players/PlayerEndpointsTests` (11). Build 0 warnings, 106/106 tests passed. Broadcasting the change (AC-22) is T18.
-- [ ] **T10** [BE] [P] `GET /api/rooms/default` returning room definition and Tiled JSON — depends on T08
+- [x] **T10** [BE] [P] `GET /api/rooms/default` returning room definition and Tiled JSON — depends on T08
       Done when: authenticated call returns the seeded map; anonymous call returns 401.
+      Note (2026-11-16): `Features/Rooms/RoomEndpoints.cs` — `RoomDefinition(Slug, Name, MaxPlayers, MapVersion, Map)` with the Tiled JSON returned as a JSON object (not a string); requires sign-in; 503 "Room not available" if the room was never seeded. Tests: `Rooms/RoomEndpointsTests` (seeded room, capacity 10, 30 × 20 map with its five layers; anonymous 401). Two requests added to `postman/PixelOffice.API.Auth.http`. Build 0 warnings, 108/108 tests passed.
 
 ## Room core (pure, no I/O)
 
