@@ -50,8 +50,9 @@ Tags: `[BE]` backend (Dyg), `[UI]` frontend (teammate), `[TEST]`, `[INFRA]`; `[P
 
 ## Room core (pure, no I/O)
 
-- [ ] **T11** [BE] `TiledMapParser` → `CollisionGrid` (blocked tiles, bounds, spawn, default facing) — covers BR-04, BR-06 — depends on T05
+- [x] **T11** [BE] `TiledMapParser` → `CollisionGrid` (blocked tiles, bounds, spawn, default facing) — covers BR-04, BR-06 — depends on T05
       Done when: unit tests parse `office.tmj` and a small fixture map; malformed maps fail with a clear error at startup.
+      Note (2026-11-16): `Features/Rooms/CollisionGrid.cs` — `Facing` (Up 0, Down 1, Left 2, Right 3), `TilePosition`, immutable `CollisionGrid` (`IsInBounds`, `IsBlocked`, `IsWalkable`, `Spawn`, `SpawnFacing` = Down). `Features/Rooms/TiledMapParser.cs` — non-empty tiles in `walls`/`furniture` block; one object in `spawn` gives the spawn tile; flipped tile ids handled; `InvalidMapException` with a specific message for every unusable map (bad JSON, non-orthogonal, infinite, missing/non-numeric size, wrong layer type or tile count, non-CSV encoding, no blocking layer, 0 or 2+ spawn objects, spawn outside the map or on a blocked tile). `DbSeeder` parses the map before storing it, so a broken `office.tmj` stops startup and nothing is saved. Test helper `Fixtures/TestMaps` builds maps from text pictures. Tests: `Rooms/TiledMapParserTests` (office grid, fixture map, 22 broken-map cases), new seeder test; the seeder's version-bump test now uses valid maps. Build 0 warnings, 152/152 tests passed.
 - [ ] **T12** [BE] `PlayerMovementState` + `MovementRules.TryEnqueue` (adjacency, bounds, blocked, queue limit, stale epoch) — covers BR-06, BR-07, BR-14; AC-06, AC-07, AC-14 — depends on T11
       Done when: `AC_06_…`, `AC_07_…`, `AC_14_…` unit tests pass.
 - [ ] **T13** [BE] `MovementRules.Drain` with schedule-based step pacing on `TimeProvider` — covers BR-05, BR-11; AC-04, AC-13, AC-15 — depends on T12

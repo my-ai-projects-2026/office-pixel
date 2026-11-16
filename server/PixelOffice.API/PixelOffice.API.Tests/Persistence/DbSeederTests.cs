@@ -48,8 +48,9 @@ public sealed class DbSeederTests(PostgresFixture postgres)
     public async Task A_changed_map_file_replaces_the_json_and_bumps_the_version()
     {
         var options = await postgres.CreateDatabaseAsync();
-        const string original = """{"width":30,"height":20,"layers":[]}""";
-        const string changed = """{"width":30,"height":20,"layers":[],"nextobjectid":2}""";
+        string[] picture = ["####", "#S.#", "####"];
+        var original = TestMaps.Build(picture);
+        var changed = TestMaps.Build(picture, map => map["nextobjectid"] = 2);
 
         await SeedAsync(options, original);
         await SeedAsync(options, original);
@@ -60,6 +61,20 @@ public sealed class DbSeederTests(PostgresFixture postgres)
         Assert.Equal(2, map.Version);
         Assert.Contains("nextobjectid", map.TiledJson, StringComparison.Ordinal);
         Assert.Single(await db.Rooms.ToListAsync());
+    }
+
+    [Fact]
+    public async Task A_broken_map_file_stops_seeding_with_a_clear_error_and_stores_nothing()
+    {
+        var options = await postgres.CreateDatabaseAsync();
+        var broken = TestMaps.Build(["####", "#..#", "####"]); // no spawn point
+
+        var error = await Assert.ThrowsAsync<InvalidMapException>(() => SeedAsync(options, broken));
+
+        Assert.Contains("spawn", error.Message, StringComparison.OrdinalIgnoreCase);
+        await using var db = new AppDbContext(options);
+        Assert.False(await db.Maps.AnyAsync());
+        Assert.False(await db.Rooms.AnyAsync());
     }
 
     private async Task SeedFromFileAsync(DbContextOptions<AppDbContext> options)
