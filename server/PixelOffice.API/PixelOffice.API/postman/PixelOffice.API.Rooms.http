@@ -1,0 +1,51 @@
+### Pixel Office API: rooms (T10)
+#
+# Needs the account from PixelOffice.API.Auth.http: run its "Register" once on a fresh database.
+# Start the AppHost first (see PixelOffice.API.Auth.http), then run this file top to bottom.
+# "Sign in" saves the access token in {{accessToken}} (JetBrains HTTP Client syntax).
+
+@baseUrl = https://localhost:7009
+@email = ana@example.com
+@password = correct-horse-1
+
+### Sign in: 200 + token for the requests below
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "{{password}}"
+}
+
+> {%
+    client.global.set("accessToken", response.body.accessToken);
+    client.test("Sign-in succeeds (run Register in PixelOffice.API.Auth.http first if this is 401)", () => {
+        client.assert(response.status === 200, "status " + response.status);
+    });
+%}
+
+### Default room: name, capacity 10, map version and the 30 x 20 office map (US-04, BR-02)
+GET {{baseUrl}}/api/rooms/default
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
+> {%
+    client.test("Default room and office map are returned", () => {
+        client.assert(response.status === 200, "status " + response.status);
+        client.assert(response.body.maxPlayers === 10, "maxPlayers " + response.body.maxPlayers);
+        client.assert(response.body.map.width === 30 && response.body.map.height === 20,
+            "map " + response.body.map.width + " x " + response.body.map.height);
+    });
+%}
+
+### Default room without a token: 401
+GET {{baseUrl}}/api/rooms/default
+Accept: application/json
+
+> {%
+    client.test("Room needs a token", () => {
+        client.assert(response.status === 401, "status " + response.status);
+    });
+%}
+
+###

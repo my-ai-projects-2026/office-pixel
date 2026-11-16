@@ -1,0 +1,93 @@
+### Pixel Office API: profile and avatar choice (T09)
+#
+# Needs the account from PixelOffice.API.Auth.http: run its "Register" once on a fresh database.
+# Start the AppHost first (see PixelOffice.API.Auth.http), then run this file top to bottom.
+# "Sign in" saves the access token in {{accessToken}} (JetBrains HTTP Client syntax).
+
+@baseUrl = https://localhost:7009
+@email = ana@example.com
+@password = correct-horse-1
+
+### Sign in: 200 + token for the requests below
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "{{password}}"
+}
+
+> {%
+    client.global.set("accessToken", response.body.accessToken);
+    client.test("Sign-in succeeds (run Register in PixelOffice.API.Auth.http first if this is 401)", () => {
+        client.assert(response.status === 200, "status " + response.status);
+    });
+%}
+
+### Avatars: the 6 presets, no sign-in needed (BR-17)
+GET {{baseUrl}}/api/avatars
+Accept: application/json
+
+> {%
+    client.test("Six preset avatars", () => {
+        client.assert(response.status === 200 && response.body.length === 6, "status " + response.status);
+    });
+%}
+
+### My profile: id, display name, avatar (BR-12)
+GET {{baseUrl}}/api/me
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
+### My profile without a token: 401
+GET {{baseUrl}}/api/me
+Accept: application/json
+
+> {%
+    client.test("Profile needs a token", () => {
+        client.assert(response.status === 401, "status " + response.status);
+    });
+%}
+
+### Choose avatar 4: 204, saved with the account (BR-17)
+PUT {{baseUrl}}/api/me/avatar
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "avatarId": 4
+}
+
+> {%
+    client.test("Preset avatar is saved", () => {
+        client.assert(response.status === 204, "status " + response.status);
+    });
+%}
+
+### Choose avatar 7 (not a preset): 400 on avatarId, look stays 4 (BR-17)
+PUT {{baseUrl}}/api/me/avatar
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "avatarId": 7
+}
+
+> {%
+    client.test("Avatar outside the set is refused", () => {
+        client.assert(response.status === 400, "status " + response.status);
+    });
+%}
+
+### My profile again: avatarId is 4
+GET {{baseUrl}}/api/me
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
+> {%
+    client.test("Avatar choice was kept", () => {
+        client.assert(response.body.avatarId === 4, "avatarId " + response.body.avatarId);
+    });
+%}
+
+###
