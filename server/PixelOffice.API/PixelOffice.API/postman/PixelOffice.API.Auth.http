@@ -1,0 +1,178 @@
+### Pixel Office API: health, auth and player endpoints (T01–T09)
+#
+# Start everything first (Docker Desktop running), from server/PixelOffice.API:
+#   dotnet run --project PixelOffice.AppHost
+#
+# Then run the requests top to bottom. "Register" and "Sign in" save the access token in
+# {{accessToken}}; the requests below them use it.
+#
+# Uses HTTPS on purpose: over HTTP the API redirects to HTTPS, and many HTTP clients drop the
+# Authorization header when they follow a redirect.
+#
+# The response scripts (`> {% ... %}`) use the JetBrains HTTP Client syntax (Rider / IntelliJ).
+# In other clients, copy the accessToken from the Register or Sign in response into @accessToken.
+#
+# "Register" uses a fixed email, so it returns 201 the first time and 409 after that.
+# "Sign in" still works, and sets the token either way.
+
+@baseUrl = https://localhost:7009
+@email = ana@example.com
+@password = correct-horse-1
+
+### Health (Development only): "Healthy" when the API and database are up
+GET {{baseUrl}}/health
+
+### Avatars: the 6 presets, no sign-in needed (BR-17)
+GET {{baseUrl}}/api/avatars
+Accept: application/json
+
+### Register: 201 + token, avatar 1, display name trimmed (AC-25). 409 if the email already exists.
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "{{password}}",
+  "displayName": "  Ana  "
+}
+
+> {%
+    if (response.status === 201) {
+        client.global.set("accessToken", response.body.accessToken);
+    }
+    client.test("Register returns 201, or 409 when the account already exists", () => {
+        client.assert(response.status === 201 || response.status === 409, "status " + response.status);
+    });
+%}
+
+### Register again with the same email, different case and spaces: 409 "Email already in use" (AC-26)
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "  ANA@Example.com ",
+  "password": "{{password}}",
+  "displayName": "Other Ana"
+}
+
+> {%
+    client.test("Duplicate email is refused", () => {
+        client.assert(response.status === 409, "status " + response.status);
+    });
+%}
+
+### Register with every field wrong: 400 naming email, password and displayName (AC-27)
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "not-an-email",
+  "password": "short",
+  "displayName": "   "
+}
+
+> {%
+    client.test("Invalid registration names each wrong field", () => {
+        client.assert(response.status === 400, "status " + response.status);
+        client.assert(response.body.errors.email && response.body.errors.password && response.body.errors.displayName,
+            "errors: " + JSON.stringify(response.body.errors));
+    });
+%}
+
+### Sign in: 200 + token (AC-28)
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "{{password}}"
+}
+
+> {%
+    client.global.set("accessToken", response.body.accessToken);
+    client.test("Sign-in succeeds", () => {
+        client.assert(response.status === 200, "status " + response.status);
+    });
+%}
+
+### Sign in with a wrong password: 401 "Email or password is incorrect" (AC-29)
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "wrong-password"
+}
+
+> {%
+    client.test("Wrong password is refused", () => {
+        client.assert(response.status === 401, "status " + response.status);
+    });
+%}
+
+### Sign in with an unknown email: the same 401 as a wrong password (AC-29)
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "nobody@example.com",
+  "password": "{{password}}"
+}
+
+> {%
+    client.test("Unknown email gets the same refusal", () => {
+        client.assert(response.status === 401, "status " + response.status);
+    });
+%}
+
+### My profile: id, display name, avatar (BR-12)
+GET {{baseUrl}}/api/me
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
+### My profile without a token: 401
+GET {{baseUrl}}/api/me
+Accept: application/json
+
+### Choose avatar 4: 204, saved with the account (BR-17)
+PUT {{baseUrl}}/api/me/avatar
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "avatarId": 4
+}
+
+> {%
+    client.test("Preset avatar is saved", () => {
+        client.assert(response.status === 204, "status " + response.status);
+    });
+%}
+
+### Choose avatar 7 (not a preset): 400 on avatarId, look stays 4 (BR-17)
+PUT {{baseUrl}}/api/me/avatar
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "avatarId": 7
+}
+
+> {%
+    client.test("Avatar outside the set is refused", () => {
+        client.assert(response.status === 400, "status " + response.status);
+    });
+%}
+
+### My profile again: avatarId is 4
+GET {{baseUrl}}/api/me
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
+> {%
+    client.test("Avatar choice was kept", () => {
+        client.assert(response.body.avatarId === 4, "avatarId " + response.body.avatarId);
+    });
+%}
+
+###
