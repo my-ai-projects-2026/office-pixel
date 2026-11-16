@@ -66,4 +66,11 @@ public sealed class Player
         AvatarId = avatarId;
         return true;
     }
+
+    /// <summary>Stores a re-computed hash (e.g. after the hashing algorithm is strengthened). Never a readable password.</summary>
+    public void ChangePasswordHash(string passwordHash)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(passwordHash);
+        PasswordHash = passwordHash;
+    }
 }
