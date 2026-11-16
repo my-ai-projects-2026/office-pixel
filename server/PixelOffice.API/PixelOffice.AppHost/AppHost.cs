@@ -8,12 +8,21 @@ var postgres = builder.AddPostgres("postgres")
 // The API reads this as ConnectionStrings:pixeloffice (AddNpgsqlDbContext("pixeloffice")).
 var database = postgres.AddDatabase("pixeloffice");
 
+// Signing key for the API's access tokens: generated on first run and kept in this AppHost's user secrets,
+// so it survives restarts and never appears in source.
+var jwtSigningKey = builder.AddParameter(
+    "jwt-signing-key",
+    new GenerateParameterDefault { MinLength = 64, Special = false },
+    secret: true,
+    persist: true);
+
 var api = builder.AddProject<Projects.PixelOffice_API>("api")
     .WithReference(database)
+    .WithEnvironment("Jwt__SigningKey", jwtSigningKey)
     .WaitFor(database)
     .WithHttpHealthCheck("/health");
 
-// The Next.js client (its own git repository at /app) runs with `npm run dev`.
+// The Next.js client in app/ runs with `npm run dev`.
 // Only NEXT_PUBLIC_* variables reach browser code, so the API address is passed under that name.
 #pragma warning disable ASPIREJAVASCRIPT001 // AddNextJsApp is experimental in Aspire 13.6.
 var web = builder.AddNextJsApp("web", "../../../app")

@@ -1,4 +1,5 @@
 using PixelOffice.API.Data;
+using PixelOffice.API.Features.Auth;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -20,6 +21,8 @@ builder.Services.AddCors(options => options.AddDefaultPolicy(policy => policy
     .AllowAnyMethod()
     .AllowCredentials()));
 
+builder.AddPixelOfficeAuth();
+
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
@@ -34,7 +37,11 @@ app.UseCors();
 
 app.UseHttpsRedirection();
 
+app.UseAuthentication();
+app.UseAuthorization();
+
 app.MapDefaultEndpoints();
+app.MapAuthEndpoints();
 
 await app.MigrateAndSeedAsync();
 
