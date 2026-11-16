@@ -1,16 +1,17 @@
-### Pixel Office API: health, auth, player and room endpoints (T01–T10)
+### Pixel Office API: health, registration and sign-in (T01–T08)
+#
+# Other areas: PixelOffice.API.Players.http (profile, avatars), PixelOffice.API.Rooms.http (rooms).
+# Run this file first on a fresh database: it creates the account the other files sign in with.
 #
 # Start everything first (Docker Desktop running), from server/PixelOffice.API:
 #   dotnet run --project PixelOffice.AppHost
-#
-# Then run the requests top to bottom. "Register" and "Sign in" save the access token in
-# {{accessToken}}; the requests below them use it.
 #
 # Uses HTTPS on purpose: over HTTP the API redirects to HTTPS, and many HTTP clients drop the
 # Authorization header when they follow a redirect.
 #
 # The response scripts (`> {% ... %}`) use the JetBrains HTTP Client syntax (Rider / IntelliJ).
-# In other clients, copy the accessToken from the Register or Sign in response into @accessToken.
+# "Register" and "Sign in" save the access token in {{accessToken}}. In other clients, copy the
+# accessToken from the response by hand.
 #
 # "Register" uses a fixed email, so it returns 201 the first time and 409 after that.
 # "Sign in" still works, and sets the token either way.
@@ -21,10 +22,6 @@
 
 ### Health (Development only): "Healthy" when the API and database are up
 GET {{baseUrl}}/health
-
-### Avatars: the 6 presets, no sign-in needed (BR-17)
-GET {{baseUrl}}/api/avatars
-Accept: application/json
 
 ### Register: 201 + token, avatar 1, display name trimmed (AC-25). 409 if the email already exists.
 POST {{baseUrl}}/api/auth/register
@@ -124,73 +121,5 @@ Content-Type: application/json
         client.assert(response.status === 401, "status " + response.status);
     });
 %}
-
-### My profile: id, display name, avatar (BR-12)
-GET {{baseUrl}}/api/me
-Authorization: Bearer {{accessToken}}
-Accept: application/json
-
-### My profile without a token: 401
-GET {{baseUrl}}/api/me
-Accept: application/json
-
-### Choose avatar 4: 204, saved with the account (BR-17)
-PUT {{baseUrl}}/api/me/avatar
-Authorization: Bearer {{accessToken}}
-Content-Type: application/json
-
-{
-  "avatarId": 4
-}
-
-> {%
-    client.test("Preset avatar is saved", () => {
-        client.assert(response.status === 204, "status " + response.status);
-    });
-%}
-
-### Choose avatar 7 (not a preset): 400 on avatarId, look stays 4 (BR-17)
-PUT {{baseUrl}}/api/me/avatar
-Authorization: Bearer {{accessToken}}
-Content-Type: application/json
-
-{
-  "avatarId": 7
-}
-
-> {%
-    client.test("Avatar outside the set is refused", () => {
-        client.assert(response.status === 400, "status " + response.status);
-    });
-%}
-
-### My profile again: avatarId is 4
-GET {{baseUrl}}/api/me
-Authorization: Bearer {{accessToken}}
-Accept: application/json
-
-> {%
-    client.test("Avatar choice was kept", () => {
-        client.assert(response.body.avatarId === 4, "avatarId " + response.body.avatarId);
-    });
-%}
-
-### Default room: name, capacity 10, map version and the 30 x 20 office map (US-04, BR-02)
-GET {{baseUrl}}/api/rooms/default
-Authorization: Bearer {{accessToken}}
-Accept: application/json
-
-> {%
-    client.test("Default room and office map are returned", () => {
-        client.assert(response.status === 200, "status " + response.status);
-        client.assert(response.body.maxPlayers === 10, "maxPlayers " + response.body.maxPlayers);
-        client.assert(response.body.map.width === 30 && response.body.map.height === 20,
-            "map " + response.body.map.width + " x " + response.body.map.height);
-    });
-%}
-
-### Default room without a token: 401
-GET {{baseUrl}}/api/rooms/default
-Accept: application/json
 
 ###
